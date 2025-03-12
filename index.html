@@ -3,240 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo Game</title>
+    <title>Hangman Game</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
+            background-color: #f5f5f5;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
         }
+
         .game-container {
-            background: #fff;
+            text-align: center;
+            width: 400px;
+            background-color: white;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        #hangman-container {
+            margin-top: 20px;
+            width: 150px;
+            height: 200px;
+            position: relative;
+        }
+
+        #hangman-container svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        #word-display {
+            margin-top: 20px;
+            font-size: 30px;
+            letter-spacing: 10px;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 40px;
+            font-size: 20px;
             text-align: center;
         }
-        h1 {
-            color: #444;
-        }
-        .player-container {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
-        }
-        .bingo-card {
-            display: grid;
-            grid-template-columns: repeat(5, 80px);
-            grid-template-rows: repeat(5, 80px);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .card-cell {
-            width: 80px;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            background-color: #f0f0f0;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .card-cell:hover {
-            background-color: #e0e0e0;
-        }
-        .free-space {
-            background-color: #ffeb3b;
-        }
-        .bingo-button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
+
+        button {
             padding: 10px 20px;
-            font-size: 1.2rem;
-            border-radius: 5px;
+            font-size: 16px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            margin-top: 10px;
         }
-        .bingo-button:hover {
-            background-color: #45a049;
-        }
-        .bingo-message {
-            font-size: 1.5rem;
-            color: #ff5733;
-            font-weight: bold;
-        }
-        .player {
+
+        #letters-guessed {
             margin-top: 20px;
-            font-size: 1.2rem;
+        }
+
+        #message {
+            margin-top: 20px;
             font-weight: bold;
+            color: red;
         }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <h1>Bingo Game</h1>
-        
-        <div id="playerNamesForm">
-            <h2>Enter Player Names</h2>
-            <input type="text" id="player1" placeholder="Player 1" required>
-            <input type="text" id="player2" placeholder="Player 2" required>
-            <input type="text" id="player3" placeholder="Player 3" required>
-            <input type="text" id="player4" placeholder="Player 4" required>
-            <button id="startGameBtn" class="bingo-button">Start Game</button>
+        <h1>Hangman Game</h1>
+        <div id="hangman-container">
+            <!-- Hangman SVG -->
+            <svg id="hangman-svg">
+                <line id="line1" x1="50" y1="20" x2="50" y2="160" stroke="black" stroke-width="5" stroke-linecap="round"/>
+                <line id="line2" x1="50" y1="20" x2="100" y2="20" stroke="black" stroke-width="5" stroke-linecap="round"/>
+                <line id="line3" x1="100" y1="20" x2="100" y2="40" stroke="black" stroke-width="5" stroke-linecap="round"/>
+                <line id="line4" x1="100" y1="40" x2="130" y2="70" stroke="black" stroke-width="5" stroke-linecap="round"/>
+                <line id="line5" x1="100" y1="40" x2="70" y2="70" stroke="black" stroke-width="5" stroke-linecap="round"/>
+                <line id="line6" x1="100" y1="60" x2="130" y2="100" stroke="black" stroke-width="5" stroke-linecap="round"/>
+                <line id="line7" x1="100" y1="60" x2="70" y2="100" stroke="black" stroke-width="5" stroke-linecap="round"/>
+                <circle id="head" cx="100" cy="50" r="10" stroke="black" stroke-width="5" fill="none"/>
+            </svg>
         </div>
 
-        <div id="gameArea" style="display: none;">
-            <div id="player-container" class="player-container"></div>
-            <button id="generate-btn" class="bingo-button">Generate Number</button>
-            <div id="current-number" class="bingo-message"></div>
-            <div id="message"></div>
+        <div id="word-display">_ _ _ _ _</div>
+
+        <input type="text" id="guess-input" maxlength="1" placeholder="Enter a letter" autofocus>
+        <button id="guess-btn">Guess</button>
+
+        <div id="letters-guessed">
+            <p>Letters Guessed: </p>
+            <span id="guessed-letters"></span>
         </div>
+
+        <div id="message"></div>
     </div>
 
     <script>
-        const startGameBtn = document.getElementById('startGameBtn');
-        const playerNamesForm = document.getElementById('playerNamesForm');
-        const gameArea = document.getElementById('gameArea');
-        const playerContainer = document.getElementById('player-container');
-        const generateBtn = document.getElementById('generate-btn');
-        const currentNumberElement = document.getElementById('current-number');
-        const messageElement = document.getElementById('message');
+        let word = "HELLO";  // You can change this to fetch random words or any word.
+        let guessedLetters = [];
+        let incorrectGuesses = 0;
+        let wordDisplay = document.getElementById("word-display");
+        let guessInput = document.getElementById("guess-input");
+        let guessButton = document.getElementById("guess-btn");
+        let guessedLettersSpan = document.getElementById("guessed-letters");
+        let message = document.getElementById("message");
 
-        let playerNames = [];
-        let playerCards = [];
-        let numbersCalled = [];
-        let currentNumber = null;
-
-        // Start Game: Collect player names and initialize cards
-        startGameBtn.addEventListener('click', () => {
-            const name1 = document.getElementById('player1').value.trim();
-            const name2 = document.getElementById('player2').value.trim();
-            const name3 = document.getElementById('player3').value.trim();
-            const name4 = document.getElementById('player4').value.trim();
-
-            if (name1 && name2 && name3 && name4) {
-                playerNames = [name1, name2, name3, name4];
-                playerCards = [];
-                for (let i = 0; i < 4; i++) {
-                    playerCards.push(generateBingoCard());
-                }
-                renderPlayers();
-                playerNamesForm.style.display = 'none';
-                gameArea.style.display = 'block';
-            } else {
-                alert('Please enter all player names!');
+        // Hide hangman parts initially
+        function resetHangman() {
+            for (let i = 1; i <= 7; i++) {
+                document.getElementById(`line${i}`).style.display = "none";
             }
-        });
+            document.getElementById("head").style.display = "none";
+        }
 
-        // Generate a Bingo card for a player
-        function generateBingoCard() {
-            let cardNumbers = [];
-            for (let col = 0; col < 5; col++) {
-                let colNumbers = [];
-                for (let row = 0; row < 5; row++) {
-                    let num;
-                    if (col === 2 && row === 2) {
-                        num = 'Free';  // Middle space
-                    } else {
-                        switch (col) {
-                            case 0:
-                                num = getRandomNumber(1, 15);
-                                break;
-                            case 1:
-                                num = getRandomNumber(16, 30);
-                                break;
-                            case 2:
-                                num = getRandomNumber(31, 45);
-                                break;
-                            case 3:
-                                num = getRandomNumber(46, 60);
-                                break;
-                            case 4:
-                                num = getRandomNumber(61, 75);
-                                break;
-                        }
+        // Show hangman parts based on incorrect guesses
+        function updateHangman() {
+            incorrectGuesses++;
+            if (incorrectGuesses >= 1) document.getElementById("line1").style.display = "block";
+            if (incorrectGuesses >= 2) document.getElementById("line2").style.display = "block";
+            if (incorrectGuesses >= 3) document.getElementById("line3").style.display = "block";
+            if (incorrectGuesses >= 4) document.getElementById("line4").style.display = "block";
+            if (incorrectGuesses >= 5) document.getElementById("line5").style.display = "block";
+            if (incorrectGuesses >= 6) document.getElementById("line6").style.display = "block";
+            if (incorrectGuesses >= 7) document.getElementById("line7").style.display = "block";
+            if (incorrectGuesses >= 8) document.getElementById("head").style.display = "block";
+        }
+
+        // Update word display
+        function updateWordDisplay() {
+            let displayWord = "";
+            for (let i = 0; i < word.length; i++) {
+                if (guessedLetters.includes(word[i])) {
+                    displayWord += word[i] + " ";
+                } else {
+                    displayWord += "_ ";
+                }
+            }
+            wordDisplay.textContent = displayWord.trim();
+            checkWin();
+        }
+
+        // Check if the user won
+        function checkWin() {
+            let displayedWord = wordDisplay.textContent.replace(/ /g, "");
+            if (displayedWord === word) {
+                message.textContent = "You won!";
+                message.style.color = "green";
+            }
+        }
+
+        // Handle Guess
+        function handleGuess() {
+            let guess = guessInput.value.toUpperCase();
+            if (guess && !guessedLetters.includes(guess)) {
+                guessedLetters.push(guess);
+                guessedLettersSpan.textContent = guessedLetters.join(", ");
+
+                if (word.includes(guess)) {
+                    updateWordDisplay();
+                } else {
+                    updateHangman();
+                    if (incorrectGuesses === 8) {
+                        message.textContent = "Game Over! The word was: " + word;
                     }
-                    colNumbers.push(num);
-                }
-                cardNumbers.push(colNumbers);
-            }
-            return cardNumbers;
-        }
-
-        // Random Number Generator
-        function getRandomNumber(min, max) {
-            let num;
-            do {
-                num = Math.floor(Math.random() * (max - min + 1)) + min;
-            } while (numbersCalled.includes(num));
-            numbersCalled.push(num);
-            return num;
-        }
-
-        // Render the Bingo cards for all players
-        function renderPlayers() {
-            playerContainer.innerHTML = '';
-            playerNames.forEach((name, index) => {
-                const playerDiv = document.createElement('div');
-                playerDiv.classList.add('player');
-                playerDiv.innerHTML = `<h3>${name}'s Bingo Card</h3><div class="bingo-card" id="player-${index}"></div>`;
-                playerContainer.appendChild(playerDiv);
-                renderBingoCard(playerCards[index], index);
-            });
-        }
-
-        // Render a single Bingo card
-        function renderBingoCard(cardNumbers, playerIndex) {
-            const cardDiv = document.getElementById(`player-${playerIndex}`);
-            cardDiv.innerHTML = '';  // Clear previous card
-            for (let row = 0; row < 5; row++) {
-                for (let col = 0; col < 5; col++) {
-                    let cellValue = cardNumbers[col][row];
-                    let cell = document.createElement('div');
-                    cell.classList.add('card-cell');
-                    if (cellValue === 'Free') {
-                        cell.classList.add('free-space');
-                        cell.textContent = 'Free';
-                    } else {
-                        cell.textContent = cellValue;
-                        cell.addEventListener('click', () => toggleCell(playerIndex, cell, cellValue));
-                    }
-                    cardDiv.appendChild(cell);
                 }
             }
+            guessInput.value = "";
         }
 
-        // Toggle Cell Marked/Unmarked
-        function toggleCell(playerIndex, cell, value) {
-            if (value !== 'Free') {
-                cell.style.backgroundColor = cell.style.backgroundColor === 'rgb(0, 204, 255)' ? '#f0f0f0' : '#00ccff';
-                playerCards[playerIndex].forEach((col, colIndex) => {
-                    col.forEach((num, rowIndex) => {
-                        if (num === value) {
-                            playerCards[playerIndex][colIndex][rowIndex] = 'Marked';
-                        }
-                    });
-                });
-            }
-        }
+        guessButton.addEventListener("click", handleGuess);
 
-        // Generate and display the next random Bingo number
-        generateBtn.addEventListener('click', () => {
-            if (numbersCalled.length >= 75) {
-                messageElement.textContent = 'All numbers have been called!';
-                return;
-            }
-            let number = getRandomNumber(1, 75);
-            currentNumber = number;
-            currentNumberElement.textContent = `Current Number: ${number}`;
-        });
+        // Initialize game
+        resetHangman();
+        updateWordDisplay();
     </script>
 </body>
 </html>
