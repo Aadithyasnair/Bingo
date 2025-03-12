@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .game-container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #444;
+        }
+        .bingo-card {
+            display: grid;
+            grid-template-columns: repeat(5, 80px);
+            grid-template-rows: repeat(5, 80px);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .card-cell {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .card-cell:hover {
+            background-color: #e0e0e0;
+        }
+        .free-space {
+            background-color: #ffeb3b;
+        }
+        .bingo-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .bingo-button:hover {
+            background-color: #45a049;
+        }
+        .bingo-message {
+            font-size: 1.5rem;
+            color: #ff5733;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Bingo Game</h1>
+        <div id="bingo-card" class="bingo-card"></div>
+        <button id="generate-btn" class="bingo-button">Generate Number</button>
+        <div id="current-number" class="bingo-message"></div>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const bingoCard = document.getElementById('bingo-card');
+        const generateBtn = document.getElementById('generate-btn');
+        const currentNumberElement = document.getElementById('current-number');
+        const messageElement = document.getElementById('message');
+        const cardSize = 5;
+        let numbersCalled = [];
+        let cardNumbers = [];
+
+        // Generate Bingo Card
+        function generateBingoCard() {
+            cardNumbers = [];
+            for (let col = 0; col < cardSize; col++) {
+                let colNumbers = [];
+                for (let row = 0; row < cardSize; row++) {
+                    let num;
+                    if (col === 2 && row === 2) {
+                        num = 'Free';  // Middle space
+                    } else {
+                        switch (col) {
+                            case 0:
+                                num = getRandomNumber(1, 15);
+                                break;
+                            case 1:
+                                num = getRandomNumber(16, 30);
+                                break;
+                            case 2:
+                                num = getRandomNumber(31, 45);
+                                break;
+                            case 3:
+                                num = getRandomNumber(46, 60);
+                                break;
+                            case 4:
+                                num = getRandomNumber(61, 75);
+                                break;
+                        }
+                    }
+                    colNumbers.push(num);
+                }
+                cardNumbers.push(colNumbers);
+            }
+
+            renderBingoCard();
+        }
+
+        // Random Number Generator
+        function getRandomNumber(min, max) {
+            let num;
+            do {
+                num = Math.floor(Math.random() * (max - min + 1)) + min;
+            } while (numbersCalled.includes(num));
+            numbersCalled.push(num);
+            return num;
+        }
+
+        // Render Bingo Card on UI
+        function renderBingoCard() {
+            bingoCard.innerHTML = '';
+            for (let row = 0; row < cardSize; row++) {
+                for (let col = 0; col < cardSize; col++) {
+                    let cellValue = cardNumbers[col][row];
+                    let cell = document.createElement('div');
+                    cell.classList.add('card-cell');
+                    if (cellValue === 'Free') {
+                        cell.classList.add('free-space');
+                        cell.textContent = 'Free';
+                    } else {
+                        cell.textContent = cellValue;
+                        cell.addEventListener('click', () => toggleCell(cell, cellValue));
+                    }
+                    bingoCard.appendChild(cell);
+                }
+            }
+        }
+
+        // Toggle Cell Marked/Unmarked
+        function toggleCell(cell, value) {
+            if (value !== 'Free') {
+                cell.style.backgroundColor = cell.style.backgroundColor === 'rgb(0, 204, 255)' ? '#f0f0f0' : '#00ccff';
+            }
+        }
+
+        // Generate and display the next random Bingo number
+        generateBtn.addEventListener('click', () => {
+            if (numbersCalled.length >= 75) {
+                messageElement.textContent = 'All numbers have been called!';
+                return;
+            }
+            let number = getRandomNumber(1, 75);
+            currentNumberElement.textContent = `Current Number: ${number}`;
+        });
+
+        // Initial setup
+        generateBingoCard();
+    </script>
+</body>
+</html>
