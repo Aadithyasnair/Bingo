@@ -24,6 +24,11 @@
         h1 {
             color: #444;
         }
+        .player-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
         .bingo-card {
             display: grid;
             grid-template-columns: repeat(5, 80px);
@@ -67,32 +72,75 @@
             color: #ff5733;
             font-weight: bold;
         }
+        .player {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <div class="game-container">
         <h1>Bingo Game</h1>
-        <div id="bingo-card" class="bingo-card"></div>
-        <button id="generate-btn" class="bingo-button">Generate Number</button>
-        <div id="current-number" class="bingo-message"></div>
-        <div id="message"></div>
+        
+        <div id="playerNamesForm">
+            <h2>Enter Player Names</h2>
+            <input type="text" id="player1" placeholder="Player 1" required>
+            <input type="text" id="player2" placeholder="Player 2" required>
+            <input type="text" id="player3" placeholder="Player 3" required>
+            <input type="text" id="player4" placeholder="Player 4" required>
+            <button id="startGameBtn" class="bingo-button">Start Game</button>
+        </div>
+
+        <div id="gameArea" style="display: none;">
+            <div id="player-container" class="player-container"></div>
+            <button id="generate-btn" class="bingo-button">Generate Number</button>
+            <div id="current-number" class="bingo-message"></div>
+            <div id="message"></div>
+        </div>
     </div>
 
     <script>
-        const bingoCard = document.getElementById('bingo-card');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const playerNamesForm = document.getElementById('playerNamesForm');
+        const gameArea = document.getElementById('gameArea');
+        const playerContainer = document.getElementById('player-container');
         const generateBtn = document.getElementById('generate-btn');
         const currentNumberElement = document.getElementById('current-number');
         const messageElement = document.getElementById('message');
-        const cardSize = 5;
-        let numbersCalled = [];
-        let cardNumbers = [];
 
-        // Generate Bingo Card
+        let playerNames = [];
+        let playerCards = [];
+        let numbersCalled = [];
+        let currentNumber = null;
+
+        // Start Game: Collect player names and initialize cards
+        startGameBtn.addEventListener('click', () => {
+            const name1 = document.getElementById('player1').value.trim();
+            const name2 = document.getElementById('player2').value.trim();
+            const name3 = document.getElementById('player3').value.trim();
+            const name4 = document.getElementById('player4').value.trim();
+
+            if (name1 && name2 && name3 && name4) {
+                playerNames = [name1, name2, name3, name4];
+                playerCards = [];
+                for (let i = 0; i < 4; i++) {
+                    playerCards.push(generateBingoCard());
+                }
+                renderPlayers();
+                playerNamesForm.style.display = 'none';
+                gameArea.style.display = 'block';
+            } else {
+                alert('Please enter all player names!');
+            }
+        });
+
+        // Generate a Bingo card for a player
         function generateBingoCard() {
-            cardNumbers = [];
-            for (let col = 0; col < cardSize; col++) {
+            let cardNumbers = [];
+            for (let col = 0; col < 5; col++) {
                 let colNumbers = [];
-                for (let row = 0; row < cardSize; row++) {
+                for (let row = 0; row < 5; row++) {
                     let num;
                     if (col === 2 && row === 2) {
                         num = 'Free';  // Middle space
@@ -119,8 +167,7 @@
                 }
                 cardNumbers.push(colNumbers);
             }
-
-            renderBingoCard();
+            return cardNumbers;
         }
 
         // Random Number Generator
@@ -133,11 +180,24 @@
             return num;
         }
 
-        // Render Bingo Card on UI
-        function renderBingoCard() {
-            bingoCard.innerHTML = '';
-            for (let row = 0; row < cardSize; row++) {
-                for (let col = 0; col < cardSize; col++) {
+        // Render the Bingo cards for all players
+        function renderPlayers() {
+            playerContainer.innerHTML = '';
+            playerNames.forEach((name, index) => {
+                const playerDiv = document.createElement('div');
+                playerDiv.classList.add('player');
+                playerDiv.innerHTML = `<h3>${name}'s Bingo Card</h3><div class="bingo-card" id="player-${index}"></div>`;
+                playerContainer.appendChild(playerDiv);
+                renderBingoCard(playerCards[index], index);
+            });
+        }
+
+        // Render a single Bingo card
+        function renderBingoCard(cardNumbers, playerIndex) {
+            const cardDiv = document.getElementById(`player-${playerIndex}`);
+            cardDiv.innerHTML = '';  // Clear previous card
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 5; col++) {
                     let cellValue = cardNumbers[col][row];
                     let cell = document.createElement('div');
                     cell.classList.add('card-cell');
@@ -146,17 +206,24 @@
                         cell.textContent = 'Free';
                     } else {
                         cell.textContent = cellValue;
-                        cell.addEventListener('click', () => toggleCell(cell, cellValue));
+                        cell.addEventListener('click', () => toggleCell(playerIndex, cell, cellValue));
                     }
-                    bingoCard.appendChild(cell);
+                    cardDiv.appendChild(cell);
                 }
             }
         }
 
         // Toggle Cell Marked/Unmarked
-        function toggleCell(cell, value) {
+        function toggleCell(playerIndex, cell, value) {
             if (value !== 'Free') {
                 cell.style.backgroundColor = cell.style.backgroundColor === 'rgb(0, 204, 255)' ? '#f0f0f0' : '#00ccff';
+                playerCards[playerIndex].forEach((col, colIndex) => {
+                    col.forEach((num, rowIndex) => {
+                        if (num === value) {
+                            playerCards[playerIndex][colIndex][rowIndex] = 'Marked';
+                        }
+                    });
+                });
             }
         }
 
@@ -167,11 +234,9 @@
                 return;
             }
             let number = getRandomNumber(1, 75);
+            currentNumber = number;
             currentNumberElement.textContent = `Current Number: ${number}`;
         });
-
-        // Initial setup
-        generateBingoCard();
     </script>
 </body>
 </html>
